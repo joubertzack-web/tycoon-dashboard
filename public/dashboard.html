@@ -13,7 +13,30 @@
         }
 
         h1 {
+            margin-bottom: 20px;
+        }
+
+        #playerList {
+            margin-bottom: 20px;
+        }
+
+        .playerBtn {
+            margin-right: 10px;
             margin-bottom: 10px;
+            padding: 6px 12px;
+            background: #222;
+            color: #eee;
+            border: 1px solid #444;
+            cursor: pointer;
+        }
+
+        .playerBtn:hover {
+            background: #444;
+        }
+
+        .playerBtn.active {
+            background: #555;
+            border-color: #888;
         }
 
         table {
@@ -34,35 +57,6 @@
         tr:nth-child(even) {
             background: #181818;
         }
-
-        #filterBar {
-            margin-bottom: 15px;
-        }
-
-        #filterBar button {
-            margin-right: 10px;
-            padding: 6px 12px;
-            background: #222;
-            color: #eee;
-            border: 1px solid #444;
-            cursor: pointer;
-        }
-
-        #filterBar button:hover {
-            background: #444;
-        }
-
-        .deleteBtn {
-            background: #922;
-            color: #fff;
-            border: 1px solid #c44;
-            padding: 4px 8px;
-            cursor: pointer;
-        }
-
-        .deleteBtn:hover {
-            background: #c33;
-        }
     </style>
 </head>
 
@@ -70,21 +64,16 @@
 
 <h1>Tycoon Mine Feedback Logs</h1>
 
-<div id="filterBar">
-    <button data-filter="All">All</button>
-    <button data-filter="Bug">Bug Reports</button>
-    <button data-filter="Feature">Feature Requests</button>
-    <button data-filter="General">General Feedback</button>
-</div>
+<!-- PLAYER LIST -->
+<div id="playerList"></div>
 
+<!-- LOG TABLE -->
 <table id="logTable">
     <thead>
         <tr>
-            <th>Player</th>
             <th>Type</th>
             <th>Text</th>
             <th>Timestamp</th>
-            <th>Actions</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -92,67 +81,64 @@
 
 <script>
 let logs = [];
-let currentFilter = "All";
+let selectedPlayer = null;
+
 // Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
     logs = await res.json();
 
-    if (currentFilter === "All") {
-        renderTable(logs);
-    } else {
-        renderTable(logs.filter(entry => entry.Type === currentFilter));
-    }
+    renderPlayerList();
+    renderLogs();
 }
 
-// Render table rows
-function renderTable(list) {
+// Render list of players
+function renderPlayerList() {
+    const container = document.getElementById("playerList");
+    container.innerHTML = "";
+
+    const players = [...new Set(logs.map(l => l.PlayerName))];
+
+    players.forEach(player => {
+        const btn = document.createElement("button");
+        btn.textContent = player;
+        btn.className = "playerBtn";
+
+        if (selectedPlayer === player) {
+            btn.classList.add("active");
+        }
+
+        btn.addEventListener("click", () => {
+            selectedPlayer = player;
+            renderPlayerList();
+            renderLogs();
+        });
+
+        container.appendChild(btn);
+    });
+}
+
+// Render logs for selected player
+function renderLogs() {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
 
-    list.forEach((log, index) => {
+    if (!selectedPlayer) return;
+
+    const filtered = logs.filter(l => l.PlayerName === selectedPlayer);
+
+    filtered.forEach(log => {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${log.PlayerName} (${log.UserId})</td>
             <td>${log.Type}</td>
             <td>${log.Text}</td>
             <td>${new Date(log.Timestamp * 1000).toLocaleString()}</td>
-            <td><button class="deleteBtn" data-index="${index}">Delete</button></td>
         `;
 
         tbody.appendChild(row);
     });
 }
-
-document.querySelectorAll('#filterBar button').forEach(btn => {
-    btn.addEventListener("click", () => {
-        currentFilter = btn.dataset.filter;
-
-        if (currentFilter === "All") {
-            renderTable(logs);
-        } else {
-            renderTable(logs.filter(entry => entry.Type === currentFilter));
-        }
-    });
-});
-
-// Delete button handler
-document.addEventListener("click", async (e) => {
-    if (e.target.classList.contains("deleteBtn")) {
-        const index = e.target.dataset.index;
-
-        const res = await fetch(`/api/logs/${index}`, {
-            method: "DELETE"
-        });
-
-        const result = await res.json();
-
-        if (result.success) {
-            loadLogs(); // refresh table
-        }
-    }
-});
 
 // Initial load + auto-refresh
 loadLogs();
@@ -161,4 +147,3 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
-
