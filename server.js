@@ -4,13 +4,13 @@ const bodyParser = require("body-parser");
 
 const app = express(); // MUST come first
 
+// Redirect root to dashboard
+app.get("/", (req, res) => {
+    res.redirect("/dashboard.html");
+});
+
 app.use(cors());
 app.use(bodyParser.json());
-
-// Root route so Railway health checks pass
-app.get("/", (req, res) => {
-    res.send("Tycoon Dashboard Running");
-});
 
 const API_KEY = process.env.API_KEY || "DEV_KEY";
 
@@ -45,5 +45,3 @@ app.use(express.static("public"));
 const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
-
-
