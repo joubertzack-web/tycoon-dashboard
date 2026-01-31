@@ -18,6 +18,17 @@ const API_KEY = process.env.API_KEY || "DEV_KEY";
 
 // JSON file path
 const FEEDBACK_PATH = path.join(__dirname, "data", "feedback.json");
+const FEEDBACK_DIR = path.dirname(FEEDBACK_PATH);
+
+// Ensure /data folder exists
+if (!fs.existsSync(FEEDBACK_DIR)) {
+    fs.mkdirSync(FEEDBACK_DIR, { recursive: true });
+}
+
+// Ensure feedback.json exists
+if (!fs.existsSync(FEEDBACK_PATH)) {
+    fs.writeFileSync(FEEDBACK_PATH, "[]");
+}
 
 // Load feedback from JSON
 function loadFeedback() {
@@ -42,6 +53,15 @@ function saveFeedback(data) {
 // Load logs into memory
 let logs = loadFeedback();
 
+// Prevent duplicates
+function entryExists(entry) {
+    return logs.some(e =>
+        e.UserId === entry.UserId &&
+        e.Text === entry.Text &&
+        e.Timestamp === entry.Timestamp
+    );
+}
+
 // Receive logs from Roblox
 app.post("/api/logs", (req, res) => {
     const { apiKey, data } = req.body;
@@ -52,6 +72,11 @@ app.post("/api/logs", (req, res) => {
 
     if (!data) {
         return res.status(400).json({ error: "Missing data" });
+    }
+
+    // Skip duplicates
+    if (entryExists(data)) {
+        return res.json({ success: true, skipped: true });
     }
 
     logs.unshift(data);
@@ -66,11 +91,12 @@ app.post("/api/logs", (req, res) => {
 app.get("/api/logs", (req, res) => {
     res.json(logs);
 });
+
 // Delete a log entry by index
 app.delete("/api/logs/:index", (req, res) => {
-    const index = tonumber(req.params.index);
+    const index = Number(req.params.index);
 
-    if (index == null || index < 0 || index >= logs.length) {
+    if (Number.isNaN(index) || index < 0 || index >= logs.length) {
         return res.status(400).json({ error: "Invalid index" });
     }
 
@@ -79,6 +105,7 @@ app.delete("/api/logs/:index", (req, res) => {
 
     res.json({ success: true });
 });
+
 // Serve static dashboard files
 app.use(express.static("public"));
 
@@ -86,4 +113,3 @@ const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
-
