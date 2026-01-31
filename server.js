@@ -2,14 +2,21 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 
-const app = express();
+const app = express(); // MUST come first
+
 app.use(cors());
 app.use(bodyParser.json());
+
+// Root route so Railway health checks pass
+app.get("/", (req, res) => {
+    res.send("Tycoon Dashboard Running");
+});
 
 const API_KEY = process.env.API_KEY || "DEV_KEY";
 
 let logs = [];
 
+// Receive logs from Roblox
 app.post("/api/logs", (req, res) => {
     const { apiKey, data } = req.body;
 
@@ -27,11 +34,14 @@ app.post("/api/logs", (req, res) => {
     res.json({ success: true });
 });
 
+// Serve logs to dashboard
 app.get("/api/logs", (req, res) => {
     res.json(logs);
 });
 
+// Serve static dashboard files
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
