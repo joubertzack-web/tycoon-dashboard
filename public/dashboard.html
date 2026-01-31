@@ -92,12 +92,17 @@
 
 <script>
 let logs = [];
-
+let currentFilter = "All";
 // Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
     logs = await res.json();
-    renderTable(logs);
+
+    if (currentFilter === "All") {
+        renderTable(logs);
+    } else {
+        renderTable(logs.filter(entry => entry.Type === currentFilter));
+    }
 }
 
 // Render table rows
@@ -120,15 +125,14 @@ function renderTable(list) {
     });
 }
 
-// Filter buttons
 document.querySelectorAll('#filterBar button').forEach(btn => {
     btn.addEventListener("click", () => {
-        const filter = btn.dataset.filter;
+        currentFilter = btn.dataset.filter;
 
-        if (filter === "All") {
+        if (currentFilter === "All") {
             renderTable(logs);
         } else {
-            renderTable(logs.filter(entry => entry.Type === filter));
+            renderTable(logs.filter(entry => entry.Type === currentFilter));
         }
     });
 });
@@ -157,3 +161,4 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
+
