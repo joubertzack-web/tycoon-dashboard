@@ -10,7 +10,6 @@ const API_KEY = process.env.API_KEY || "DEV_KEY";
 
 let logs = [];
 
-// Receive logs from Roblox
 app.post("/api/logs", (req, res) => {
     const { apiKey, data } = req.body;
 
@@ -28,10 +27,10 @@ app.post("/api/logs", (req, res) => {
     res.json({ success: true });
 });
 
-// Serve logs to dashboard
-app.get("/api/logs", (req, res) => res.json(logs));
+app.get("/api/logs", (req, res) => {
+    res.json(logs);
+});
 
-// Serve static dashboard files
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
