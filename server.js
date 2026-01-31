@@ -66,7 +66,19 @@ app.post("/api/logs", (req, res) => {
 app.get("/api/logs", (req, res) => {
     res.json(logs);
 });
+// Delete a log entry by index
+app.delete("/api/logs/:index", (req, res) => {
+    const index = tonumber(req.params.index);
 
+    if (index == null || index < 0 || index >= logs.length) {
+        return res.status(400).json({ error: "Invalid index" });
+    }
+
+    logs.splice(index, 1);
+    saveFeedback(logs);
+
+    res.json({ success: true });
+});
 // Serve static dashboard files
 app.use(express.static("public"));
 
@@ -74,3 +86,4 @@ const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
