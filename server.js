@@ -33,7 +33,9 @@ app.post("/api/logs", (req, res) => {
 
     res.json({ success: true });
 });
-
+app.get("/api/feedback", (req, res) => {
+    // fetch from Roblox DataStore via MessagingService or HttpService
+});
 // Serve logs to dashboard
 app.get("/api/logs", (req, res) => {
     res.json(logs);
@@ -46,3 +48,4 @@ const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
