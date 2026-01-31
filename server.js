@@ -43,6 +43,7 @@ app.get("/api/logs", (req, res) => {
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
-
+console.log("RAILWAY PORT:", process.env.PORT);
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
 
