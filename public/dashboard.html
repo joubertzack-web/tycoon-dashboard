@@ -3,12 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Tycoon Mine Feedback Logs</title>
+
     <style>
-        body { font-family: Arial; background: #111; color: #eee; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; border-bottom: 1px solid #333; }
-        th { background: #222; }
-        tr:nth-child(even) { background: #181818; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #eee;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background: #222;
+        }
+
+        tr:nth-child(even) {
+            background: #181818;
+        }
 
         #filterBar {
             margin-bottom: 15px;
@@ -25,6 +50,18 @@
 
         #filterBar button:hover {
             background: #444;
+        }
+
+        .deleteBtn {
+            background: #922;
+            color: #fff;
+            border: 1px solid #c44;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        .deleteBtn:hover {
+            background: #c33;
         }
     </style>
 </head>
@@ -47,38 +84,43 @@
             <th>Type</th>
             <th>Text</th>
             <th>Timestamp</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody></tbody>
 </table>
 
 <script>
-let logs = []; // global so filters can use it
+let logs = [];
 
+// Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
-    logs = await res.json(); // store globally
-
+    logs = await res.json();
     renderTable(logs);
 }
 
+// Render table rows
 function renderTable(list) {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
 
-    list.forEach(log => {
+    list.forEach((log, index) => {
         const row = document.createElement("tr");
+
         row.innerHTML = `
             <td>${log.PlayerName} (${log.UserId})</td>
             <td>${log.Type}</td>
             <td>${log.Text}</td>
             <td>${new Date(log.Timestamp * 1000).toLocaleString()}</td>
+            <td><button class="deleteBtn" data-index="${index}">Delete</button></td>
         `;
+
         tbody.appendChild(row);
     });
 }
 
-// FILTER BUTTONS
+// Filter buttons
 document.querySelectorAll('#filterBar button').forEach(btn => {
     btn.addEventListener("click", () => {
         const filter = btn.dataset.filter;
@@ -91,9 +133,28 @@ document.querySelectorAll('#filterBar button').forEach(btn => {
     });
 });
 
+// Delete button handler
+document.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("deleteBtn")) {
+        const index = e.target.dataset.index;
+
+        const res = await fetch(`/api/logs/${index}`, {
+            method: "DELETE"
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            loadLogs(); // refresh table
+        }
+    }
+});
+
+// Initial load + auto-refresh
 loadLogs();
 setInterval(loadLogs, 5000);
 </script>
 
 </body>
 </html>
+
