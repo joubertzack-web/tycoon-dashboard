@@ -1,11 +1,5 @@
 <!DOCTYPE html>
 <html>
-    <div id="filterBar">
-    <button data-filter="All">All</button>
-    <button data-filter="Bug">Bug Reports</button>
-    <button data-filter="Feature">Feature Requests</button>
-    <button data-filter="General">General Feedback</button>
-</div>
 <head>
     <meta charset="UTF-8">
     <title>Tycoon Mine Feedback Logs</title>
@@ -15,11 +9,36 @@
         th, td { padding: 8px; border-bottom: 1px solid #333; }
         th { background: #222; }
         tr:nth-child(even) { background: #181818; }
+
+        #filterBar {
+            margin-bottom: 15px;
+        }
+
+        #filterBar button {
+            margin-right: 10px;
+            padding: 6px 12px;
+            background: #222;
+            color: #eee;
+            border: 1px solid #444;
+            cursor: pointer;
+        }
+
+        #filterBar button:hover {
+            background: #444;
+        }
     </style>
 </head>
+
 <body>
 
 <h1>Tycoon Mine Feedback Logs</h1>
+
+<div id="filterBar">
+    <button data-filter="All">All</button>
+    <button data-filter="Bug">Bug Reports</button>
+    <button data-filter="Feature">Feature Requests</button>
+    <button data-filter="General">General Feedback</button>
+</div>
 
 <table id="logTable">
     <thead>
@@ -34,14 +53,20 @@
 </table>
 
 <script>
+let logs = []; // global so filters can use it
+
 async function loadLogs() {
     const res = await fetch("/api/logs");
-    const logs = await res.json();
+    logs = await res.json(); // store globally
 
+    renderTable(logs);
+}
+
+function renderTable(list) {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
 
-    logs.forEach(log => {
+    list.forEach(log => {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${log.PlayerName} (${log.UserId})</td>
@@ -53,10 +78,22 @@ async function loadLogs() {
     });
 }
 
+// FILTER BUTTONS
+document.querySelectorAll('#filterBar button').forEach(btn => {
+    btn.addEventListener("click", () => {
+        const filter = btn.dataset.filter;
+
+        if (filter === "All") {
+            renderTable(logs);
+        } else {
+            renderTable(logs.filter(entry => entry.Type === filter));
+        }
+    });
+});
+
 loadLogs();
 setInterval(loadLogs, 5000);
 </script>
 
 </body>
-
 </html>
