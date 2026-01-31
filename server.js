@@ -1,6 +1,6 @@
-import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 
 const app = express(); // MUST come first
 
@@ -45,3 +45,4 @@ app.use(express.static("public"));
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
