@@ -2,90 +2,351 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Admin Login</title>
+    <title>Tycoon Mine Feedback Logs</title>
+
     <style>
         body {
+            margin: 0;
+            font-family: Arial, sans-serif;
             background: #0f0f0f;
             color: #eee;
-            font-family: Arial;
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
-            margin: 0;
         }
 
-        #loginBox {
+        /* SIDEBAR */
+        #sidebar {
+            width: 260px;
             background: #151515;
-            padding: 30px;
-            border: 1px solid #333;
-            border-radius: 8px;
-            width: 300px;
-            text-align: center;
+            border-right: 1px solid #222;
+            padding: 20px;
+            overflow-y: auto;
         }
 
-        input {
+        #sidebar h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .playerBtn {
             width: 100%;
-            padding: 10px;
-            margin-top: 15px;
-            background: #1a1a1a;
+            text-align: left;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: #1e1e1e;
             border: 1px solid #333;
-            color: #eee;
+            color: #ccc;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .playerBtn:hover {
+            background: #2a2a2a;
+        }
+
+        .playerBtn.active {
+            background: #3a3a3a;
+            border-color: #666;
+            color: #fff;
+        }
+
+        /* MAIN CONTENT */
+        #main {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        #main h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 26px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #161616;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #222;
+        }
+
+        th {
+            background: #202020;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background: #1a1a1a;
+        }
+
+        .deleteBtn {
+            background: #922;
+            color: #fff;
+            border: 1px solid #c44;
+            padding: 5px 10px;
+            cursor: pointer;
             border-radius: 4px;
         }
 
-        button {
+        .deleteBtn:hover {
+            background: #c33;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+    <h2>Players</h2>
+    <div id="playerList"></div>
+
+    <h2 style="margin-top:25px;">Admin Notes</h2>
+
+    <div id="notesDisplay"
+        style="
             width: 100%;
+            height: 200px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
             padding: 10px;
-            margin-top: 15px;
+            border-radius: 4px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            font-size: 13px;
+            white-space: pre-wrap;
+        "
+    ></div>
+
+    <textarea id="adminNotesInput" placeholder="Write a new note..."
+        style="
+            width: 100%;
+            height: 80px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            resize: vertical;
+        "
+    ></textarea>
+
+    <button id="saveNoteBtn"
+        style="
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
             background: #2a2a2a;
             border: 1px solid #444;
             color: #eee;
             cursor: pointer;
             border-radius: 4px;
-        }
+        "
+    >Save Note</button>
+</div>
 
-        button:hover {
-            background: #3a3a3a;
-        }
+<!-- MAIN CONTENT -->
+<div id="main">
+    <h1 id="playerTitle">Select a Player</h1>
 
-        #error {
-            color: #f55;
-            margin-top: 10px;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-
-<div id="loginBox">
-    <h2>Admin Login</h2>
-
-    <input id="passwordInput" type="password" placeholder="Enter password">
-    <button onclick="attemptLogin()">Login</button>
-
-    <div id="error">Incorrect password</div>
+    <table id="logTable">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Text</th>
+                <th>Timestamp</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </div>
 
 <script>
-async function attemptLogin() {
-    const password = document.getElementById("passwordInput").value;
+// Redirect to login if no token
+if (!localStorage.getItem("adminToken")) {
+    window.location.href = "/login.html";
+}
 
-    const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+let logs = [];
+let selectedPlayer = null;
+
+// Load logs from server
+async function loadLogs() {
+    const res = await fetch("/api/logs");
+    logs = await res.json();
+
+    renderPlayerList();
+    renderLogs();
+}
+
+// Render list of players
+function renderPlayerList() {
+    const container = document.getElementById("playerList");
+    container.innerHTML = "";
+
+    const players = [...new Set(logs.map(l => l.PlayerName))];
+
+    players.forEach(player => {
+        const btn = document.createElement("button");
+        btn.textContent = player;
+        btn.className = "playerBtn";
+
+        if (selectedPlayer === player) {
+            btn.classList.add("active");
+        }
+
+        btn.addEventListener("click", () => {
+            selectedPlayer = player;
+            document.getElementById("playerTitle").textContent = player + " — Feedback";
+            renderPlayerList();
+            renderLogs();
+        });
+
+        container.appendChild(btn);
     });
+}
 
+// Render logs for selected player
+function renderLogs() {
+    const tbody = document.querySelector("#logTable tbody");
+    tbody.innerHTML = "";
+
+    if (!selectedPlayer) return;
+
+    const filtered = logs
+        .map((log, index) => ({ ...log, index }))
+        .filter(l => l.PlayerName === selectedPlayer);
+
+    filtered.forEach(log => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${log.Type}</td>
+            <td>${log.Text}</td>
+            <td>${new Date(log.Timestamp * 1000).toLocaleString()}</td>
+            <td><button class="deleteBtn" data-index="${log.index}">Delete</button></td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Delete log entry
+document.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("deleteBtn")) {
+        const index = e.target.dataset.index;
+
+        const res = await fetch(`/api/logs/${index}`, {
+            method: "DELETE"
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            loadLogs();
+        }
+    }
+});
+
+// ===============================
+// NOTES SYSTEM
+// ===============================
+
+async function loadNotes() {
+    const res = await fetch("/api/notes");
     const data = await res.json();
 
-    if (data.success) {
-        localStorage.setItem("adminToken", data.token);
-        window.location.href = "/dashboard.html";
-    } else {
-        document.getElementById("error").style.display = "block";
+    const display = document.getElementById("notesDisplay");
+    display.innerHTML = "";
+
+    if (!data.notes || data.notes.length === 0) {
+        display.textContent = "No notes yet.";
+        return;
     }
+
+    data.notes.forEach((n, i) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "12px";
+        div.style.borderBottom = "1px solid #333";
+        div.style.paddingBottom = "8px";
+
+        div.innerHTML = `
+            <div style="color:#fff; font-size:14px;">${n.text}</div>
+            <div style="color:#888; font-size:11px; margin-top:2px;">
+                ${new Date(n.timestamp * 1000).toLocaleString()}
+            </div>
+            <button class="deleteNoteBtn" data-index="${i}"
+                style="
+                    margin-top:6px;
+                    background:#922;
+                    color:#fff;
+                    border:1px solid #c44;
+                    padding:3px 8px;
+                    cursor:pointer;
+                    border-radius:4px;
+                    font-size:11px;
+                "
+            >Delete</button>
+        `;
+
+        display.appendChild(div);
+    });
 }
+
+async function saveNote() {
+    const input = document.getElementById("adminNotesInput");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+    });
+
+    input.value = "";
+    loadNotes();
+}
+
+async function deleteNote(index) {
+    await fetch(`/api/notes/${index}`, {
+        method: "DELETE"
+    });
+
+    loadNotes();
+}
+
+document.addEventListener("click", (e) => {
+    if (e.target.id === "saveNoteBtn") {
+        saveNote();
+    }
+
+    if (e.target.classList.contains("deleteNoteBtn")) {
+        const index = e.target.dataset.index;
+        deleteNote(index);
+    }
+});
+
+// Load notes on startup
+loadNotes();
+
+// Initial load + auto-refresh
+loadLogs();
+setInterval(loadLogs, 5000);
 </script>
 
 </body>
