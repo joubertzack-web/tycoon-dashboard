@@ -184,7 +184,15 @@ let selectedPlayer = null;
 if (!localStorage.getItem("adminToken")) {
     window.location.href = "/login.html";
 }
-</script>
+<script>
+// Redirect to login if no token
+if (!localStorage.getItem("adminToken")) {
+    window.location.href = "/login.html";
+}
+
+let logs = [];
+let selectedPlayer = null;
+
 // Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
@@ -322,8 +330,8 @@ async function saveNote() {
         body: JSON.stringify({ text })
     });
 
-    input.value = ""; // clear textarea
-    loadNotes(); // refresh display
+    input.value = "";
+    loadNotes();
 }
 
 // Delete a note
@@ -357,5 +365,6 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
+
 
 
