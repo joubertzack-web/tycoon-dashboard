@@ -17,7 +17,11 @@
         window.location.href = "/login.html";
     }
     </script>
-
+    <script>
+    if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+    }
+    </script>
     <style>
         body {
             margin: 0;
@@ -346,6 +350,7 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
+
 
 
 
