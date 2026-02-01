@@ -76,12 +76,6 @@
 
         #robloxLink:hover {
             text-decoration: underline;
-            <script>
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js")
-        .catch(err => console.error("Service Worker registration failed:", err));
-}
-</script>
         }
     </style>
 </head>
@@ -131,6 +125,11 @@ async function login() {
 
     window.location.href = "/dashboard.html";
 }
+    if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js")
+        .catch(err => console.error("SW registration failed:", err));
+}
+
 </script>
 
 </body>
