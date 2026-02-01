@@ -109,8 +109,14 @@ app.delete("/api/logs/:index", (req, res) => {
 // Serve static dashboard files
 app.use(express.static("public"));
 
+app.get("/api/logs/ids", (req, res) => {
+    const ids = logs.map(entry => entry.UniqueId);
+    res.json({ ids });
+});
+
 const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 console.log("REAL FEEDBACK PATH:", FEEDBACK_PATH);
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
 
