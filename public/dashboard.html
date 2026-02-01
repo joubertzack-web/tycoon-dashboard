@@ -89,6 +89,19 @@
         tr:nth-child(even) {
             background: #1a1a1a;
         }
+
+        .deleteBtn {
+            background: #922;
+            color: #fff;
+            border: 1px solid #c44;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .deleteBtn:hover {
+            background: #c33;
+        }
     </style>
 </head>
 
@@ -110,6 +123,7 @@
                 <th>Type</th>
                 <th>Text</th>
                 <th>Timestamp</th>
+                <th>Delete</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -163,7 +177,9 @@ function renderLogs() {
 
     if (!selectedPlayer) return;
 
-    const filtered = logs.filter(l => l.PlayerName === selectedPlayer);
+    const filtered = logs
+        .map((log, index) => ({ ...log, index }))
+        .filter(l => l.PlayerName === selectedPlayer);
 
     filtered.forEach(log => {
         const row = document.createElement("tr");
@@ -172,11 +188,29 @@ function renderLogs() {
             <td>${log.Type}</td>
             <td>${log.Text}</td>
             <td>${new Date(log.Timestamp * 1000).toLocaleString()}</td>
+            <td><button class="deleteBtn" data-index="${log.index}">Delete</button></td>
         `;
 
         tbody.appendChild(row);
     });
 }
+
+// Delete button handler
+document.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("deleteBtn")) {
+        const index = e.target.dataset.index;
+
+        const res = await fetch(`/api/logs/${index}`, {
+            method: "DELETE"
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            loadLogs();
+        }
+    }
+});
 
 // Initial load + auto-refresh
 loadLogs();
@@ -185,4 +219,3 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
-
