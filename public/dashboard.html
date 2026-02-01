@@ -53,7 +53,6 @@
             color: #fff;
         }
 
-
         /* MAIN CONTENT */
         #main {
             flex: 1;
@@ -112,13 +111,31 @@
 <div id="sidebar">
     <h2>Players</h2>
     <div id="playerList"></div>
-<h2 style="margin-top:25px;">Admin Notes</h2>
 
-<div id="notesBox">
-    <textarea id="adminNotes" placeholder="Write notes for other admins..." 
+    <h2 style="margin-top:25px;">Admin Notes</h2>
+
+    <!-- Notes Display -->
+    <div id="notesDisplay"
         style="
             width: 100%;
-            height: 140px;
+            height: 200px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            font-size: 13px;
+            white-space: pre-wrap;
+        "
+    ></div>
+
+    <!-- Notes Input -->
+    <textarea id="adminNotesInput" placeholder="Write a new note..."
+        style="
+            width: 100%;
+            height: 80px;
             background: #1a1a1a;
             border: 1px solid #333;
             color: #ddd;
@@ -128,7 +145,7 @@
         "
     ></textarea>
 
-    <button id="saveNotesBtn"
+    <button id="saveNoteBtn"
         style="
             margin-top: 10px;
             width: 100%;
@@ -139,8 +156,7 @@
             cursor: pointer;
             border-radius: 4px;
         "
-    >Save Notes</button>
-</div>
+    >Save Note</button>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -225,7 +241,7 @@ function renderLogs() {
     });
 }
 
-// Delete button handler
+// Delete log entry
 document.addEventListener("click", async (e) => {
     if (e.target.classList.contains("deleteBtn")) {
         const index = e.target.dataset.index;
@@ -241,29 +257,88 @@ document.addEventListener("click", async (e) => {
         }
     }
 });
-// Load admin notes
+
+// ===============================
+// NOTES SYSTEM
+// ===============================
+
+// Load notes into display frame
 async function loadNotes() {
     const res = await fetch("/api/notes");
     const data = await res.json();
 
-    document.getElementById("adminNotes").value = data.notes || "";
+    const display = document.getElementById("notesDisplay");
+    display.innerHTML = "";
+
+    if (!data.notes || data.notes.length === 0) {
+        display.textContent = "No notes yet.";
+        return;
+    }
+
+    data.notes.forEach((n, i) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "12px";
+        div.style.borderBottom = "1px solid #333";
+        div.style.paddingBottom = "8px";
+
+        div.innerHTML = `
+            <div style="color:#fff; font-size:14px;">${n.text}</div>
+            <div style="color:#888; font-size:11px; margin-top:2px;">
+                ${new Date(n.timestamp * 1000).toLocaleString()}
+            </div>
+            <button class="deleteNoteBtn" data-index="${i}"
+                style="
+                    margin-top:6px;
+                    background:#922;
+                    color:#fff;
+                    border:1px solid #c44;
+                    padding:3px 8px;
+                    cursor:pointer;
+                    border-radius:4px;
+                    font-size:11px;
+                "
+            >Delete</button>
+        `;
+
+        display.appendChild(div);
+    });
 }
 
-// Save admin notes
-async function saveNotes() {
-    const notes = document.getElementById("adminNotes").value;
+// Save a new note
+async function saveNote() {
+    const input = document.getElementById("adminNotesInput");
+    const text = input.value.trim();
+
+    if (!text) return;
 
     await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes })
+        body: JSON.stringify({ text })
     });
+
+    input.value = ""; // clear textarea
+    loadNotes(); // refresh display
 }
 
-// Save button handler
+// Delete a note
+async function deleteNote(index) {
+    await fetch(`/api/notes/${index}`, {
+        method: "DELETE"
+    });
+
+    loadNotes();
+}
+
+// Button handlers
 document.addEventListener("click", (e) => {
-    if (e.target.id === "saveNotesBtn") {
-        saveNotes();
+    if (e.target.id === "saveNoteBtn") {
+        saveNote();
+    }
+
+    if (e.target.classList.contains("deleteNoteBtn")) {
+        const index = e.target.dataset.index;
+        deleteNote(index);
     }
 });
 
@@ -277,3 +352,4 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
+
