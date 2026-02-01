@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <title>Tycoon Mine Feedback Logs</title>
 
+    <!-- LOGIN CHECK -->
+    <script>
+    const token = localStorage.getItem("adminToken");
+    const expiry = localStorage.getItem("adminTokenExpiry");
+
+    if (!token || !expiry || Date.now() > Number(expiry)) {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminTokenExpiry");
+        window.location.href = "/login.html";
+    }
+    </script>
+
     <style>
         body {
             margin: 0;
@@ -14,7 +26,6 @@
             height: 100vh;
         }
 
-        /* SIDEBAR */
         #sidebar {
             width: 260px;
             background: #151515;
@@ -53,7 +64,6 @@
             color: #fff;
         }
 
-        /* MAIN CONTENT */
         #main {
             flex: 1;
             padding: 25px;
@@ -107,14 +117,12 @@
 
 <body>
 
-<!-- SIDEBAR -->
 <div id="sidebar">
     <h2>Players</h2>
     <div id="playerList"></div>
 
     <h2 style="margin-top:25px;">Admin Notes</h2>
 
-    <!-- Notes Display -->
     <div id="notesDisplay"
         style="
             width: 100%;
@@ -131,7 +139,6 @@
         "
     ></div>
 
-    <!-- Notes Input -->
     <textarea id="adminNotesInput" placeholder="Write a new note..."
         style="
             width: 100%;
@@ -159,7 +166,6 @@
     >Save Note</button>
 </div>
 
-<!-- MAIN CONTENT -->
 <div id="main">
     <h1 id="playerTitle">Select a Player</h1>
 
@@ -179,21 +185,7 @@
 <script>
 let logs = [];
 let selectedPlayer = null;
-<script>
-// Redirect to login if no token
-if (!localStorage.getItem("adminToken")) {
-    window.location.href = "/login.html";
-}
-<script>
-// Redirect to login if no token
-if (!localStorage.getItem("adminToken")) {
-    window.location.href = "/login.html";
-}
 
-let logs = [];
-let selectedPlayer = null;
-
-// Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
     logs = await res.json();
@@ -202,7 +194,6 @@ async function loadLogs() {
     renderLogs();
 }
 
-// Render list of players
 function renderPlayerList() {
     const container = document.getElementById("playerList");
     container.innerHTML = "";
@@ -229,7 +220,6 @@ function renderPlayerList() {
     });
 }
 
-// Render logs for selected player
 function renderLogs() {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
@@ -254,7 +244,6 @@ function renderLogs() {
     });
 }
 
-// Delete log entry
 document.addEventListener("click", async (e) => {
     if (e.target.classList.contains("deleteBtn")) {
         const index = e.target.dataset.index;
@@ -271,11 +260,7 @@ document.addEventListener("click", async (e) => {
     }
 });
 
-// ===============================
 // NOTES SYSTEM
-// ===============================
-
-// Load notes into display frame
 async function loadNotes() {
     const res = await fetch("/api/notes");
     const data = await res.json();
@@ -317,7 +302,6 @@ async function loadNotes() {
     });
 }
 
-// Save a new note
 async function saveNote() {
     const input = document.getElementById("adminNotesInput");
     const text = input.value.trim();
@@ -334,7 +318,6 @@ async function saveNote() {
     loadNotes();
 }
 
-// Delete a note
 async function deleteNote(index) {
     await fetch(`/api/notes/${index}`, {
         method: "DELETE"
@@ -343,7 +326,6 @@ async function deleteNote(index) {
     loadNotes();
 }
 
-// Button handlers
 document.addEventListener("click", (e) => {
     if (e.target.id === "saveNoteBtn") {
         saveNote();
@@ -355,16 +337,10 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// Load notes on startup
 loadNotes();
-
-// Initial load + auto-refresh
 loadLogs();
 setInterval(loadLogs, 5000);
 </script>
 
 </body>
 </html>
-
-
-
