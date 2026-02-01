@@ -179,7 +179,12 @@
 <script>
 let logs = [];
 let selectedPlayer = null;
-
+<script>
+// Redirect to login if no token
+if (!localStorage.getItem("adminToken")) {
+    window.location.href = "/login.html";
+}
+</script>
 // Load logs from server
 async function loadLogs() {
     const res = await fetch("/api/logs");
@@ -352,4 +357,5 @@ setInterval(loadLogs, 5000);
 
 </body>
 </html>
+
 
