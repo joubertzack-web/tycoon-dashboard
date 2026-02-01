@@ -17,46 +17,40 @@ app.use(bodyParser.json());
 const API_KEY = process.env.API_KEY || "DEV_KEY";
 
 // ===============================
-// FEEDBACK STORAGE
+// PERSISTENT STORAGE (/data)
 // ===============================
 
-const FEEDBACK_PATH = path.join(__dirname, "data", "feedback.json");
-const FEEDBACK_DIR = path.dirname(FEEDBACK_PATH);
+const DATA_DIR = "/data";
 
-// Ensure /data folder exists
-if (!fs.existsSync(FEEDBACK_DIR)) {
-    fs.mkdirSync(FEEDBACK_DIR, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Ensure feedback.json exists
-if (!fs.existsSync(FEEDBACK_PATH)) {
-    fs.writeFileSync(FEEDBACK_PATH, "[]");
-}
+const FEEDBACK_PATH = path.join(DATA_DIR, "feedback.json");
+const NOTES_PATH = path.join(DATA_DIR, "adminNotes.json");
 
-// Load feedback from JSON
+// Ensure files exist
+if (!fs.existsSync(FEEDBACK_PATH)) fs.writeFileSync(FEEDBACK_PATH, "[]");
+if (!fs.existsSync(NOTES_PATH)) fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: [] }, null, 2));
+
+// ===============================
+// FEEDBACK LOGS
+// ===============================
+
 function loadFeedback() {
     try {
-        const raw = fs.readFileSync(FEEDBACK_PATH, "utf8");
-        return JSON.parse(raw);
-    } catch (err) {
-        console.error("Failed to load feedback.json:", err);
+        return JSON.parse(fs.readFileSync(FEEDBACK_PATH, "utf8"));
+    } catch {
         return [];
     }
 }
 
-// Save feedback to JSON
 function saveFeedback(data) {
-    try {
-        fs.writeFileSync(FEEDBACK_PATH, JSON.stringify(data, null, 2));
-    } catch (err) {
-        console.error("Failed to save feedback.json:", err);
-    }
+    fs.writeFileSync(FEEDBACK_PATH, JSON.stringify(data, null, 2));
 }
 
-// Load logs into memory
 let logs = loadFeedback();
 
-// Prevent duplicates
 function entryExists(entry) {
     return logs.some(e =>
         e.UserId === entry.UserId &&
@@ -65,7 +59,6 @@ function entryExists(entry) {
     );
 }
 
-// Receive logs from Roblox
 app.post("/api/logs", (req, res) => {
     const { apiKey, data } = req.body;
 
@@ -77,7 +70,6 @@ app.post("/api/logs", (req, res) => {
         return res.status(400).json({ error: "Missing data" });
     }
 
-    // Skip duplicates
     if (entryExists(data)) {
         return res.json({ success: true, skipped: true });
     }
@@ -90,12 +82,10 @@ app.post("/api/logs", (req, res) => {
     res.json({ success: true });
 });
 
-// Serve logs to dashboard
 app.get("/api/logs", (req, res) => {
     res.json(logs);
 });
 
-// Delete a log entry by index
 app.delete("/api/logs/:index", (req, res) => {
     const index = Number(req.params.index);
 
@@ -109,57 +99,59 @@ app.delete("/api/logs/:index", (req, res) => {
     res.json({ success: true });
 });
 
-// Return all UniqueIds
 app.get("/api/logs/ids", (req, res) => {
     const ids = logs.map(entry => entry.UniqueId);
     res.json({ ids });
 });
 
 // ===============================
-// ADMIN NOTES STORAGE
+// ADMIN NOTES
 // ===============================
 
-const NOTES_PATH = path.join(__dirname, "data", "adminNotes.json");
-
-// Ensure notes file exists
-if (!fs.existsSync(NOTES_PATH)) {
-    fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: "" }, null, 2));
-}
-
-// Load notes
 function loadNotes() {
     try {
-        const raw = fs.readFileSync(NOTES_PATH, "utf8");
-        return JSON.parse(raw).notes || "";
-    } catch (err) {
-        console.error("Failed to load adminNotes.json:", err);
-        return "";
+        return JSON.parse(fs.readFileSync(NOTES_PATH, "utf8")).notes || [];
+    } catch {
+        return [];
     }
 }
 
-// Save notes
-function saveNotes(text) {
-    try {
-        fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: text }, null, 2));
-    } catch (err) {
-        console.error("Failed to save adminNotes.json:", err);
-    }
+function saveNotes(notes) {
+    fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes }, null, 2));
 }
 
-// Get admin notes
 app.get("/api/notes", (req, res) => {
     res.json({ notes: loadNotes() });
 });
 
-// Save admin notes
 app.post("/api/notes", (req, res) => {
-    const { notes } = req.body;
+    const { text } = req.body;
 
-    if (typeof notes !== "string") {
-        return res.status(400).json({ error: "Invalid notes format" });
+    if (!text || typeof text !== "string") {
+        return res.status(400).json({ error: "Invalid note" });
     }
 
+    const notes = loadNotes();
+    notes.unshift({
+        text,
+        timestamp: Math.floor(Date.now() / 1000)
+    });
+
     saveNotes(notes);
+    res.json({ success: true });
+});
+
+app.delete("/api/notes/:index", (req, res) => {
+    const index = Number(req.params.index);
+    const notes = loadNotes();
+
+    if (Number.isNaN(index) || index < 0 || index >= notes.length) {
+        return res.status(400).json({ error: "Invalid index" });
+    }
+
+    notes.splice(index, 1);
+    saveNotes(notes);
+
     res.json({ success: true });
 });
 
@@ -170,7 +162,7 @@ app.post("/api/notes", (req, res) => {
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
-console.log("RAILWAY PORT:", process.env.PORT);
 console.log("REAL FEEDBACK PATH:", FEEDBACK_PATH);
+console.log("REAL NOTES PATH:", NOTES_PATH);
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
