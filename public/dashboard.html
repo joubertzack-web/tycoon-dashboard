@@ -53,6 +53,7 @@
             color: #fff;
         }
 
+
         /* MAIN CONTENT */
         #main {
             flex: 1;
@@ -111,6 +112,35 @@
 <div id="sidebar">
     <h2>Players</h2>
     <div id="playerList"></div>
+<h2 style="margin-top:25px;">Admin Notes</h2>
+
+<div id="notesBox">
+    <textarea id="adminNotes" placeholder="Write notes for other admins..." 
+        style="
+            width: 100%;
+            height: 140px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            resize: vertical;
+        "
+    ></textarea>
+
+    <button id="saveNotesBtn"
+        style="
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        "
+    >Save Notes</button>
+</div>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -211,6 +241,34 @@ document.addEventListener("click", async (e) => {
         }
     }
 });
+// Load admin notes
+async function loadNotes() {
+    const res = await fetch("/api/notes");
+    const data = await res.json();
+
+    document.getElementById("adminNotes").value = data.notes || "";
+}
+
+// Save admin notes
+async function saveNotes() {
+    const notes = document.getElementById("adminNotes").value;
+
+    await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes })
+    });
+}
+
+// Save button handler
+document.addEventListener("click", (e) => {
+    if (e.target.id === "saveNotesBtn") {
+        saveNotes();
+    }
+});
+
+// Load notes on startup
+loadNotes();
 
 // Initial load + auto-refresh
 loadLogs();
