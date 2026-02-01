@@ -18,7 +18,8 @@ app.use(bodyParser.json());
 // ENV VARIABLES
 // ===============================
 const API_KEY = process.env.API_KEY || "DEV_KEY";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "DEV_PASS";
+const ADMIN_PASSWORD = "0526";
+
 
 // ===============================
 // PERSISTENT STORAGE (/data)
@@ -178,3 +179,4 @@ console.log("REAL FEEDBACK PATH:", FEEDBACK_PATH);
 console.log("REAL NOTES PATH:", NOTES_PATH);
 
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
+
