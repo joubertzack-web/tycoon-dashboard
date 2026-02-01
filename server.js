@@ -16,7 +16,10 @@ app.use(bodyParser.json());
 
 const API_KEY = process.env.API_KEY || "DEV_KEY";
 
-// JSON file path
+// ===============================
+// FEEDBACK STORAGE
+// ===============================
+
 const FEEDBACK_PATH = path.join(__dirname, "data", "feedback.json");
 const FEEDBACK_DIR = path.dirname(FEEDBACK_PATH);
 
@@ -106,17 +109,68 @@ app.delete("/api/logs/:index", (req, res) => {
     res.json({ success: true });
 });
 
-// Serve static dashboard files
-app.use(express.static("public"));
-
+// Return all UniqueIds
 app.get("/api/logs/ids", (req, res) => {
     const ids = logs.map(entry => entry.UniqueId);
     res.json({ ids });
 });
 
+// ===============================
+// ADMIN NOTES STORAGE
+// ===============================
+
+const NOTES_PATH = path.join(__dirname, "data", "adminNotes.json");
+
+// Ensure notes file exists
+if (!fs.existsSync(NOTES_PATH)) {
+    fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: "" }, null, 2));
+}
+
+// Load notes
+function loadNotes() {
+    try {
+        const raw = fs.readFileSync(NOTES_PATH, "utf8");
+        return JSON.parse(raw).notes || "";
+    } catch (err) {
+        console.error("Failed to load adminNotes.json:", err);
+        return "";
+    }
+}
+
+// Save notes
+function saveNotes(text) {
+    try {
+        fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: text }, null, 2));
+    } catch (err) {
+        console.error("Failed to save adminNotes.json:", err);
+    }
+}
+
+// Get admin notes
+app.get("/api/notes", (req, res) => {
+    res.json({ notes: loadNotes() });
+});
+
+// Save admin notes
+app.post("/api/notes", (req, res) => {
+    const { notes } = req.body;
+
+    if (typeof notes !== "string") {
+        return res.status(400).json({ error: "Invalid notes format" });
+    }
+
+    saveNotes(notes);
+    res.json({ success: true });
+});
+
+// ===============================
+// STATIC FILES
+// ===============================
+
+app.use(express.static("public"));
+
 const PORT = process.env.PORT || 3000;
 console.log("RAILWAY PORT:", process.env.PORT);
 console.log("REAL FEEDBACK PATH:", FEEDBACK_PATH);
+
 app.listen(PORT, () => console.log(`Dashboard API running on port ${PORT}`));
-
-
