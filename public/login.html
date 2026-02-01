@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta charset="UTF-8">
+    <title>Tycoon Mine Feedback Logs</title>
+
+    <script>
+    // Redirect to login if no token
+    if (!localStorage.getItem("adminToken")) {
+        window.location.href = "/login.html";
+    }
+    </script>
+
     <title>Tycoon Mine Feedback Logs</title>
 
     <style>
@@ -175,10 +185,6 @@
 </div>
 
 <script>
-// Redirect to login if no token
-if (!localStorage.getItem("adminToken")) {
-    window.location.href = "/login.html";
-}
 
 let logs = [];
 let selectedPlayer = null;
