@@ -6,20 +6,23 @@ const path = require("path");
 
 const app = express();
 
-// Redirect root to dashboard
+// Redirect root to login
 app.get("/", (req, res) => {
-    res.redirect("/dashboard.html");
+    res.redirect("/login.html");
 });
 
 app.use(cors());
 app.use(bodyParser.json());
 
+// ===============================
+// ENV VARIABLES
+// ===============================
 const API_KEY = process.env.API_KEY || "DEV_KEY";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "DEV_PASS";
 
 // ===============================
 // PERSISTENT STORAGE (/data)
 // ===============================
-
 const DATA_DIR = "/data";
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -29,14 +32,12 @@ if (!fs.existsSync(DATA_DIR)) {
 const FEEDBACK_PATH = path.join(DATA_DIR, "feedback.json");
 const NOTES_PATH = path.join(DATA_DIR, "adminNotes.json");
 
-// Ensure files exist
 if (!fs.existsSync(FEEDBACK_PATH)) fs.writeFileSync(FEEDBACK_PATH, "[]");
 if (!fs.existsSync(NOTES_PATH)) fs.writeFileSync(NOTES_PATH, JSON.stringify({ notes: [] }, null, 2));
 
 // ===============================
 // FEEDBACK LOGS
 // ===============================
-
 function loadFeedback() {
     try {
         return JSON.parse(fs.readFileSync(FEEDBACK_PATH, "utf8"));
@@ -99,15 +100,9 @@ app.delete("/api/logs/:index", (req, res) => {
     res.json({ success: true });
 });
 
-app.get("/api/logs/ids", (req, res) => {
-    const ids = logs.map(entry => entry.UniqueId);
-    res.json({ ids });
-});
-
 // ===============================
 // ADMIN NOTES
 // ===============================
-
 function loadNotes() {
     try {
         return JSON.parse(fs.readFileSync(NOTES_PATH, "utf8")).notes || [];
@@ -156,9 +151,26 @@ app.delete("/api/notes/:index", (req, res) => {
 });
 
 // ===============================
+// LOGIN SYSTEM (UI ONLY)
+// ===============================
+function generateToken() {
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+app.post("/api/login", (req, res) => {
+    const { password } = req.body;
+
+    if (password !== ADMIN_PASSWORD) {
+        return res.json({ success: false });
+    }
+
+    const token = generateToken();
+    res.json({ success: true, token });
+});
+
+// ===============================
 // STATIC FILES
 // ===============================
-
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
